@@ -10,33 +10,21 @@
     3.  python3 mavproxy.py -- master=/dev/serial0 -- baudrate 115200 -- aircraft MyCopter       <-- install maxproxy 
 """
 
-import time
 from pymavlink import mavutil
+import motor
 
 # build the connection to the flight controller
 master = mavutil.mavlink_connection('/dev/serial0', baud=115200)  
 
-# activate the motors
-master.arducopter_arm()
+# wait until the first heartbeat is received
+master.wait_heartbeat()
+print("Successfully connected to the flight controller")
 
-# test move the motor 1 at 20% throttle for 2 seconds
-master.mav.command_long_send(
-    1, # system id of the fc
-    0, # autopilot mode of the fc
-    mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST, 
-    0, # confirmation
-    1, # motor number 1
-    0, # throttle value in percentage 
-    20, # throttle value in percentage
-    2, # time in seconds of the test
-    0, # -
-    0, # -
-    0  # -
-)
+# here comes the logic of the drone
 
-#wait for 5 seconds
-time.sleep(5)
 
+
+"""Shut down the drone"""
 # disconnet the motors
 master.arducopter_disarm()
 
