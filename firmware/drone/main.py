@@ -22,8 +22,6 @@ print("Successfully connected to the flight controller")
 
 # here comes the logic of the drone
 
-
-
 """Shut down the drone"""
 # disconnet the motors
 master.arducopter_disarm()
