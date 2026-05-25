@@ -3,6 +3,7 @@ import board
 import busio
 import adafruit_tca9548a
 from adafruit_vl53l0x import VL53L0X
+import threading
 
 class ToFSensor:
     def __init__(self):
@@ -28,6 +29,14 @@ class ToFSensor:
 
         # wait a short amount of tim to ensure all sensors are ready
         time.sleep(0.5)
+
+
+    def start(self):
+        # start the thread for the distance measurement loop
+        thread = threading.Thread(target=self.measure_distances)
+        thread.start()
+
+    
 
     def measure_distances(self):
         # here starts the real measurment loop, which measures the distance from all sensors
