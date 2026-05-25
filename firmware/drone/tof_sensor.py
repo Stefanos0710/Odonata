@@ -13,6 +13,9 @@ class ToFSensor:
         # current distances
         self.current_distances = []
 
+        # is it runniing?
+        self.running = False
+
     def setup(self):
         # initialize the i2c bus 
         i2c = busio.I2C(board.SCL, board.SDA)
@@ -36,26 +39,33 @@ class ToFSensor:
 
     def start(self):
         # start the thread for the distance measurement loop
+        self.running = True
         thread = threading.Thread(target=self.measure_distances)
         thread.start()
+
+    def stop(self):
+        # stop the thread for the distance measurement loop
+        self.running = False
+
 
     def get_distances(self):
         return self.current_distances
 
     def measure_distances(self):
-        # here starts the real measurment loop, which measures the distance from all sensors
-        while True:
-            distances = []
-            for channel, tof_sensor in enumerate(self.tof_sensors):
-                # measure the distace from the sensor and add it to the list of the distances
-                distance = tof_sensor.range
-                distances.append(distance)
+        while self.running:
+            # here starts the real measurment loop, which measures the distance from all sensors
+            while True:
+                distances = []
+                for channel, tof_sensor in enumerate(self.tof_sensors):
+                    # measure the distace from the sensor and add it to the list of the distances
+                    distance = tof_sensor.range
+                    distances.append(distance)
 
-                # print the distance from the sensor
-                print(f"Distance from sensor on channel {channel}: {distance} mm")
+                    # print the distance from the sensor
+                    print(f"Distance from sensor on channel {channel}: {distance} mm")
 
-            # updating the current distances
-            self.current_distances = distances
+                # updating the current distances
+                self.current_distances = distances
 
-            # wait fro 100ms before the next measurment, sothat there are about 10 measurments per second
-            time.sleep(0.1)
+                # wait fro 100ms before the next measurment, sothat there are about 10 measurments per second
+                time.sleep(0.1)
