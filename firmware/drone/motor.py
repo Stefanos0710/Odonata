@@ -18,3 +18,6 @@ def motor(motor_number, throttle_value, time_seconds):
         0, # -
         0  # -
     )
+
+def takeoff():
+    pass
