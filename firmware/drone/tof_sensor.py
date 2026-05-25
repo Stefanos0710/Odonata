@@ -49,23 +49,26 @@ class ToFSensor:
 
 
     def get_distances(self):
+        """
+        returns a list of 4 distances, representing the distances from the 4 sensors in the order of the channels (0, 1, 2, 3),
+        and it is measured in milimeters
+        """
         return self.current_distances
 
     def measure_distances(self):
         while self.running:
             # here starts the real measurment loop, which measures the distance from all sensors
-            while True:
-                distances = []
-                for channel, tof_sensor in enumerate(self.tof_sensors):
-                    # measure the distace from the sensor and add it to the list of the distances
-                    distance = tof_sensor.range
-                    distances.append(distance)
+            distances = []
+            for channel, tof_sensor in enumerate(self.tof_sensors):
+                # measure the distace from the sensor and add it to the list of the distances
+                distance = tof_sensor.range
+                distances.append(distance)
 
-                    # print the distance from the sensor
-                    print(f"Distance from sensor on channel {channel}: {distance} mm")
+                # print the distance from the sensor
+                print(f"Distance from sensor on channel {channel}: {distance} mm")
 
-                # updating the current distances
-                self.current_distances = distances
+            # updating the current distances
+            self.current_distances = distances
 
-                # wait fro 100ms before the next measurment, sothat there are about 10 measurments per second
-                time.sleep(0.1)
+            # wait fro 100ms before the next measurment, sothat there are about 10 measurments per second
+            time.sleep(0.1)
