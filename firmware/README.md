@@ -1,0 +1,3 @@
+# Firmware
+In this part of the repository, you will find the software of Odonata. It is seperated into [Drone](https://github.com/Stefanos0710/Odonata/blob/main/firmware/drone) and [Server](https://github.com/Stefanos0710/Odonata/blob/main/firmware/server). In the drone folder you will find the code an logic to make the communication with the resberry pi zero 2 W and the fc, reaading the sensors, controling the servo motor and reading the battery status and getting the camera feed, and of course controllthe 4 motors.
+in the server folder you will find the code and the logic to the server and sending information and befehle from the drone to the server, hosting the webste where the drone is controlled over and the drone logic.
