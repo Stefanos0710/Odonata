@@ -10,6 +10,9 @@ class ToFSensor:
         # list to store the tof sensors
         self.tof_sensors = []
 
+        # current distances
+        self.current_distances = []
+
     def setup(self):
         # initialize the i2c bus 
         i2c = busio.I2C(board.SCL, board.SDA)
@@ -36,7 +39,8 @@ class ToFSensor:
         thread = threading.Thread(target=self.measure_distances)
         thread.start()
 
-    
+    def get_distances(self):
+        return self.current_distances
 
     def measure_distances(self):
         # here starts the real measurment loop, which measures the distance from all sensors
@@ -50,7 +54,8 @@ class ToFSensor:
                 # print the distance from the sensor
                 print(f"Distance from sensor on channel {channel}: {distance} mm")
 
+            # updating the current distances
+            self.current_distances = distances
+
             # wait fro 100ms before the next measurment, sothat there are about 10 measurments per second
             time.sleep(0.1)
-
-            return distances
