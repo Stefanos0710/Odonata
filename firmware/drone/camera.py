@@ -22,46 +22,113 @@ then get the april tag and its position
 import argparse
 import cv2 as cv
 from pupil_apriltags import Detector
+import numpy as np
+import threading
+import time
 
-# defining the arguments of the parser
-ap = argparse.ArgumentParser()
-ap.add_argument("--width", type=int, default=640, help="the width of the video stream")
-ap.add_argument("--height", type=int, default=480, help="the height of the video stream")
-ap.add_argument("--families", type=str, default="tagCustom48h12", help="the family of the april tag to detect")
-ap.add_argument("--nthreads", type=int, default=3, help="the number of threads to use for the detection (cpu cores)") # resberry pi zero 2 W has 4 cores, so using 3 of them for detection
-ap.add_argument("--quad_decimate", type=float, default=1.5, help="decimate input image by this factor")
+class Camera:
+    def __init__(self):
+        # camera parameters: [fx, fy, cx, cy]
+        self.camera_parameters = [460, 460, 320, 240]
 
-# pars the arguments
-args = ap.parse_args()
+        # is the camera running?
+        self.running = False
 
-# setup the camera
-cap = cv.VideoCapture(1)
-cap.set(cv.CAP_PROP_FRAME_WIDTH, args.width)
-cap.set(cv.CAP_PROP_FRAME_HEIGHT, args.height)
+        # the current data from the camera
+        self.current_data = []
 
-# setup the april tag detector
-at_detector = Detector(
-    families=args.families, 
-    nthreads=args.nthreads, 
-    quad_decimate=args.quad_decimate
-)
+    def setup(self):
+        # defining the arguments of the parser
+        ap = argparse.ArgumentParser()
+        ap.add_argument("--width", type=int, default=640, help="the width of the video stream")
+        ap.add_argument("--height", type=int, default=480, help="the height of the video stream")
+        ap.add_argument("--families", type=str, default="tagCustom48h12", help="the family of the april tag to detect")
+        ap.add_argument("--nthreads", type=int, default=3, help="the number of threads to use for the detection (cpu cores)") # resberry pi zero 2 W has 4 cores, so using 3 of them for detection
+        ap.add_argument("--quad_decimate", type=float, default=1.5, help="decimate input image by this factor")
 
-try:
-    while True:
-        # read a frame from the camera
-        ret, frame = cap.read()
+        # pars the arguments
+        self.args = ap.parse_args()
+        
+        # setup the camera
+        self.cap = cv.VideoCapture(1)
+        self.cap.set(cv.CAP_PROP_FRAME_WIDTH, self.args.width)
+        self.cap.set(cv.CAP_PROP_FRAME_HEIGHT, self.args.height)
 
-        if not ret:
-            print("Failed to grab frame")
-            break
+        # setup the april tag detector
+        self.at_detector = Detector(
+            families=self.args.families, 
+            nthreads=self.args.nthreads, 
+            quad_decimate=self.args.quad_decimate
+        )
 
-        image = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        tags = at_detector.detect(image)
 
-        # print the detected tags and their positions
-        for tag in tags:
-            print(f"Detected tag with id {tag.tag_id} at position {tag.center}")
+    def get_yaw(R):
+        sy = np.sqrt(R[0,0] * R[0,0] + R[1,0] * R[1,0])
+        singular = sy < 1e-6
+        
+        if not singular:
+            z = np.arctan2(R[1,0], R[0,0])
+        else:
+            z = 0
+        return np.degrees(z)
+    
+    def start(self):
+        # start the thread for the video stream and april tag detection
+        self.running = True
+        thread = threading.Thread(target=self.measure_data)
+        thread.start()
 
-except KeyboardInterrupt:
-    print("breaking the loop... T-T")
-    cap.release()
+    def stop(self):
+        # stop the thread for the video stream and april tag detection
+        self.running = False
+        self.cap.release()
+
+    def get_data(self):        
+        """
+        returns a list of 4 values: [x_pixel, y_pixel, z_meter, yaw], where:
+        x_pixel: the x pixel position of the tag in the image
+        y_pixel: the y pixel position of the tag in the image
+        z_meter: the distance to the tag in meters
+        yaw: the yaw angle of the tag in degrees
+        """
+        return self.current_data
+
+
+    def measure_data(self):
+        while self.running:
+            # read a frame from the camera
+            ret, frame = self.cap.read()
+            if not ret:
+                print("Failed to grab frame")
+                break
+
+            image = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+            tags = self.at_detector.detect(
+                image,
+                estimate_tag_pose=True,
+                camera_params=self.camera_parameters,
+                tag_size=0.046
+                )
+
+            # print the detected tags and their positions
+            for tag in tags:
+                # tag.center ist ein Array wie [x, y]
+                x_pixel = tag.center[0]
+                y_pixel = tag.center[1]
+                
+                # tag.pose_t ist ein 3x1 Array (Translation/Position)
+                z_meter = tag.pose_t[2][0]
+                yaw = self.get_yaw(tag.pose_R)
+                
+                print(f"Pixel-middle: X={x_pixel:.1f}, Y={y_pixel:.1f}")
+                print(f"Distance: Z={z_meter:.2f} m, Yaw={yaw:.2f} Grad")
+
+            time.sleep(0.1) # wait 100ms before the next frame
+
+            self.current_data = [
+                x_pixel, # x pixel position of the tag in the image
+                y_pixel, # y pixel position of the tag in the image
+                z_meter, # distance to the tag in meters
+                yaw # yaw angle of the tag in degrees   
+            ]
+
