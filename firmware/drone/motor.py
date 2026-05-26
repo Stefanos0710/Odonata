@@ -31,7 +31,6 @@ def motor(master, motor_number, throttle_value, time_seconds):
     )
 
 
-
 def takeoff(master, 
             target_altitude=1.0, # target altitude in meters
             climbing_speed=0.3 # climbing speed in m/s
@@ -45,8 +44,6 @@ def takeoff(master,
 
     # activate the motors
     arm_drone(master)
-
-    current_altitude = tof_sensor.get_distances()[2] # get the distance from the sensor number 2, which is facing downwards
 
     # convert the target altitude int milimeters, because the distance from the sensor is measured in milimeters
     target_altitude_mm = target_altitude * 1000
@@ -86,6 +83,6 @@ def takeoff(master,
     # wait a bit to ensure the mode is changed
     time.sleep(1)
 
-
-
+def yaw_drone():
+    pass
     
