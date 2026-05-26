@@ -50,7 +50,7 @@ class Camera:
         self.args = ap.parse_args()
         
         # setup the camera
-        self.cap = cv.VideoCapture(1)
+        self.cap = cv.VideoCapture(0)
         self.cap.set(cv.CAP_PROP_FRAME_WIDTH, self.args.width)
         self.cap.set(cv.CAP_PROP_FRAME_HEIGHT, self.args.height)
 
