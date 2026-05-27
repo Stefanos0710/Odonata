@@ -1,6 +1,7 @@
 from pymavlink import mavutil
 import tof_sensor
 import time
+import math
 
 def arm_drone(master):
     """
@@ -96,6 +97,7 @@ def takeoff(master, target_altitude=1.0, climbing_speed=0.3):
     # wait a bit to ensure the mode is changed
     time.sleep(1)
 
+
 def move_drone(master, direction="front", speed=0.5, distance=1.0, stopping_distance=0.5):
     """
     :param direction: the direction in which the drone should move, can be "front", "back", "left" or "right"
@@ -152,7 +154,7 @@ def move_drone(master, direction="front", speed=0.5, distance=1.0, stopping_dist
         # if the sensor send valid distances, we use the distance control
         else:
             # if the current distance is less than or equal to the stopping distance, we stop the movement to avoid collision
-            if current_distance <= stopping_distance*1000: 
+            if current_distance <= distance*1000 or current_distance <= stopping_distance*1000: 
                 print(f"Reached stopping distance of {stopping_distance} meters, stopping to avoid collision")
                 break
 
@@ -186,6 +188,39 @@ def move_drone(master, direction="front", speed=0.5, distance=1.0, stopping_dist
         )
         time.sleep(0.5)
 
+    # now the drone has to hover in that position
+    print("Entering hover mode")
+    master.set_mode('ALT_HOLD')
+    time.sleep(1) # wait a bit to ensure the mode is changed
+
+
+def yaw_drone(master, yaw_rate=90):
+    """
+    Yaw the drone in a specific direction with a specific yaw rate for a specific time.
+
+    :param yaw_rate: the yaw positive values for right and negative values for left in degrees
+    """
+
+    # activate the no_gps mode, to be able to control the drone without gps
+    master.set_mode('GUIDED_NOGPS')
+    time.sleep(1) # wait a bit to ensure the mode is changed
+
+    # calculate the yaw rate in radians per second -> mavlink takes yaw rate in radians per second
+    yaw_rate_rad_s = yaw_rate * (math.pi / 180)
+
+    # here comes the movment with mask to only control the yaw rate: 0b010111100111
+    master.mav.set_position_target_local_ned_send(
+        0, # time_boot_ms
+        master.target_system, master.target_component,
+        mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+        0b010111100111, # type_mask (only yaw rate is enabled)
+        0, 0, 0, # x, y, z positions (not used)
+        0, 0, 0, # x, y, z velocity in m/s (not used)
+        0, 0, 0, # x, y, z acceleration (not used)
+        0, # yaw rate in radians per second, yaw in degrees (not used)
+        yaw_rate_rad_s
+    )
+        
     # now the drone has to hover in that position
     print("Entering hover mode")
     master.set_mode('ALT_HOLD')
