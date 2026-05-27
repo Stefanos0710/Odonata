@@ -11,9 +11,10 @@
 """
 
 from pymavlink import mavutil
-import motor
+from firmware.drone import motor, servo, camera, battery_status, tof_sensor
+import time
 
-def flight_control_loop():
+def flight_loop():
     # start the drone and get the connection to the flight controller and arm
     master = turn_on_drone()
     motor.arm_drone(master)
@@ -35,6 +36,18 @@ def flight_control_loop():
     # shutdown the drone and disconnect from the flight controller
     shutdown_drone(master)
 
+def get_battery_status(master):
+    return battery_status.get_battery_status(master)
+
+def move_servo(angle):
+    # move the servo to the desired angle
+    servo.move_servo(angle)
+
+def get_tof_distances():
+    return tof_sensor.get_distances()
+
+def test_motors(master, motor_number, throttle_value, time_seconds):
+    motor.test_motor(master, motor_number, throttle_value, time_seconds)
 
 def turn_on_drone():
     # build the connection to the flight controller
@@ -57,4 +70,3 @@ def shutdown_drone(master):
 
     # disconnect the connection to the flight controller
     master.close()
-
