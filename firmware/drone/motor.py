@@ -105,6 +105,9 @@ def move_drone(master, direction="front", speed=0.5, distance=1.0, stopping_dist
     :param stopping_distance: the distance at which the drone should stop in meters
     """
 
+    # initialize the velocity values for the x and y direction
+    vy, vx = 0.0, 0.0
+
     # activate the no_gps mode, to be able to control the drone without gps
     master.set_mode('GUIDED_NOGPS')
     time.sleep(1) # wait a bit to ensure the mode is changed
@@ -137,28 +140,53 @@ def move_drone(master, direction="front", speed=0.5, distance=1.0, stopping_dist
         elapsed_time = time.time() - start_time
         current_distance = tof_sensor.get_distances()[sensor_index]
 
-        if current_distance == 8190 or current_distance == 8191 or current_distance == 0: # error values from the sensor, we can't rely on the distance measurement, so we will just move for the calculated time
+        # if the sensor send a error value, becasue the distance is to far, we rely on the time to control the movement
+        if current_distance == 8190 or current_distance == 8191 or current_distance == 0: 
             print("Distance measurement error, moving for the calculated time")
+
+            # if the elapsed time is greater than or equal to the calculated time, we can stop the movement, because we reached the target distance
             if elapsed_time >= time_needed:
                 print(f"Reached target distance of {distance} meters")
                 break
-
-        else: # if the distance measurement is reliable, we will use it to control the movement and stop at the right distance
-            if current_distance <= stopping_distance*1000: # if the drone is closer to an obstacle than the stopping distance, we will stop
+        
+        # if the sensor send valid distances, we use the distance control
+        else:
+            # if the current distance is less than or equal to the stopping distance, we stop the movement to avoid collision
+            if current_distance <= stopping_distance*1000: 
                 print(f"Reached stopping distance of {stopping_distance} meters, stopping to avoid collision")
                 break
 
-        
+        # here we will now happen the movement command
 
+        master.mav.set_position_target_local_ned_send(
+            0, # time_boot_ms
+            master.target_system, master.target_component,
+            mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+            0b0000111111000111, # type_mask (only horizontal velocity is enabled)
+            0, 0, 0, # x, y, z positions (not used)
+            vx if 'vx' in locals() else 0, vy if 'vy' in locals() else 0, 0, # x, y, z velocity in m/s
+            0, 0, 0, # x, y, z acceleration (not used)
+            0, 0 # yaw, yaw_rate (not used)
+        )
 
+        time.sleep(0.1) # for the next command after 100ms becasue we have to keep 10Hz control of the drone
 
-        distance = tof_sensor.get_distances()[sensor_index] # get the distance from the corresponding sensor
-        distance_m = distance / 1000 # convert the distance to meters
+    # here comes if the drone is to close to an object and stoping distance is overreached, go backwards for a half second
+    if current_distance <= stopping_distance*1000:
+        print("Too close to an object, moving backwards for 0.5 seconds to avoid collision")
+        master.mav.set_position_target_local_ned_send(
+            0, # time_boot_ms
+            master.target_system, master.target_component,
+            mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+            0b0000111111000111, # type_mask (only horizontal velocity is enabled)
+            0, 0, 0, # x, y, z positions (not used)
+            -vx if 'vx' in locals() else 0, -vy if 'vy' in locals() else 0, 0, # x, y, z velocity in m/s
+            0, 0, 0, # x, y, z acceleration (not used)
+            0, 0 # yaw, yaw_rate (not used)
+        )
+        time.sleep(0.5)
 
-
-
-    
-
-
-
-
+    # now the drone has to hover in that position
+    print("Entering hover mode")
+    master.set_mode('ALT_HOLD')
+    time.sleep(1) # wait a bit to ensure the mode is changed
