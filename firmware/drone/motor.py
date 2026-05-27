@@ -96,9 +96,69 @@ def takeoff(master, target_altitude=1.0, climbing_speed=0.3):
     # wait a bit to ensure the mode is changed
     time.sleep(1)
 
-def move_drone(master, direction="front", speed=0.5, distance=1.0):
+def move_drone(master, direction="front", speed=0.5, distance=1.0, stopping_distance=0.5):
     """
     :param direction: the direction in which the drone should move, can be "front", "back", "left" or "right"
     :param speed: the speed at which the drone should move in m/s
     :param distance: the distance the drone should move in meters
+    :param tof_sensors: the list of the tof sensors, which are used to measure the distance to the obstacles in the corresponding direction, and they are in the order of the channels (0, 1, 2, 3)
+    :param stopping_distance: the distance at which the drone should stop in meters
     """
+
+    # activate the no_gps mode, to be able to control the drone without gps
+    master.set_mode('GUIDED_NOGPS')
+    time.sleep(1) # wait a bit to ensure the mode is changed
+
+    if direction == "front":
+        vy = speed
+        sensor_index = 1
+    elif direction == "back":
+        vy = -speed
+        sensor_index = None # we don't have a sensor facing backwards, so we can't measure the distance to obstacles in that direction, the drone has to yaw firstly and then it will move
+        return 
+    elif direction == "left":
+        vx = -speed
+        sensor_index = 3
+    elif direction == "right":
+        vx = speed
+        sensor_index = 0
+    else:
+        print("Invalid direction, please choose from 'front', 'back', 'left' or 'right'")
+        return
+    
+    # calculate the time needed to move to the target distance with the given speed and time
+    time_needed = distance / speed
+
+    # start the timer to control the movement for the calculated time
+    start_time = time.time()
+
+    # here happens the real movment logic
+    while True:
+        elapsed_time = time.time() - start_time
+        current_distance = tof_sensor.get_distances()[sensor_index]
+
+        if current_distance == 8190 or current_distance == 8191 or current_distance == 0: # error values from the sensor, we can't rely on the distance measurement, so we will just move for the calculated time
+            print("Distance measurement error, moving for the calculated time")
+            if elapsed_time >= time_needed:
+                print(f"Reached target distance of {distance} meters")
+                break
+
+        else: # if the distance measurement is reliable, we will use it to control the movement and stop at the right distance
+            if current_distance <= stopping_distance*1000: # if the drone is closer to an obstacle than the stopping distance, we will stop
+                print(f"Reached stopping distance of {stopping_distance} meters, stopping to avoid collision")
+                break
+
+        
+
+
+
+        distance = tof_sensor.get_distances()[sensor_index] # get the distance from the corresponding sensor
+        distance_m = distance / 1000 # convert the distance to meters
+
+
+
+    
+
+
+
+
