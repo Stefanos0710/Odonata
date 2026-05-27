@@ -2,6 +2,7 @@ from pymavlink import mavutil
 import tof_sensor
 import time
 import math
+from camera import Camera as cam
 
 def arm_drone(master):
     """
@@ -230,4 +231,99 @@ def yaw_drone(master, yaw_rate=90, duration=2):
     # now the drone has to hover in that position
     print("Entering hover mode")
     master.set_mode('ALT_HOLD')
+    time.sleep(1) # wait a bit to ensure the mode is changed
+
+
+def land_drone(master, landing_speed=0.3):
+    """
+    Land the drone by using the distance to the ground from the downward facing sensor and the distance to the april tag from the camera, which is also facing downwards, to control the landing process.
+
+    :param landing_speed: the landing speed in m/s
+    """  
+    # changing to GUIDED_NOGPS mode, to be able to control the drone without gps
+    master.set_mode('GUIDED_NOGPS')
+    time.sleep(1) # wait a bit to ensure the mode is changed
+
+    # convert the landing speed to negative, because the mavlink takes negative values for climbing up and positive values for climbing down
+    landing_speed = abs(landing_speed)
+
+    x_centre = 320 # 640/2, because the camera resolution is 640x480
+    y_centre = 240 # 480/2, becasue the camera resolution is 640x480
+
+    yaw_tolerance = 5/2 # in degrees
+    pixel_tolerance = 20/2 # in pixel
+
+    phase = 1 # phase 1: align yaw, phase 2: align x and y, phase 3: landing
+
+    while True:
+        data = cam.get_data()
+
+        x_pixel, y_pixel, z_meter, yaw = data
+        vx, vy, vz, yaw_rate = 0.0, 0.0, 0.0, 0.0
+
+        if not data or len(data) != 4:
+            print("Tag data not valid or tag not detected, hovering in current position!")
+            
+            # hover in the current position
+            master.mav.set_position_target_local_ned_send(
+                0, master.target_system, master.target_component,
+                mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+                0b010111000111, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            )
+
+            time.sleep(0.1)
+            continue
+
+        if phase == 1:
+            if not abs(yaw) < yaw_tolerance:
+                yaw_rate = yaw * 0.1
+
+                yaw_rad = math.radians(yaw_rate)
+                yaw_rate = yaw_rad
+
+                yaw_rate = max(-0.5, min(0.5, yaw_rate))
+
+            else:
+                print("Yaw aligned, switching to phase 2")
+                phase = 2
+
+        elif phase == 2:
+            error_x = x_pixel - x_centre
+            error_y = y_pixel - y_centre
+
+            if abs(error_x) > pixel_tolerance:
+                vy = (error_x / 320) * 0.3
+                vy = max(-0.25, min(0.25, vy))
+
+            if abs(error_y) > pixel_tolerance:
+                vx = -(error_y / 240) * 0.3
+                vx = max(-0.25, min(0.25, vx))
+
+            if abs(error_x) <= pixel_tolerance and abs(error_y) <= pixel_tolerance:
+                print("X and Y aligned, switching to phase 3")
+                phase = 3
+
+        elif phase == 3:
+            vz = abs(landing_speed)
+
+            ground_distance = tof_sensor.get_distances()[2] / 1000 # convert to meters
+
+            if ground_distance <= 0.1:
+                print("Landed successfully!")
+                break
+        
+        # using mask 0b010111000111, to aktivate vx, vy, vz and yaw_rate control and deactivate all other controls
+        master.mav.set_position_target_local_ned_send(
+            0, master.target_system, master.target_component,
+            mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+            0b010111000111, 
+            0, 0, 0,        # position
+            vx, vy, vz,     # velocity 
+            0, 0, 0,        # acceleration
+            0, yaw_rate     # yaw-rate, yaw
+        )
+
+        time.sleep(0.1) # for the next command after 100ms becasue we have to keep 10Hz control of the drone
+
+    master.set_mode('LAND')
     time.sleep(1) # wait a bit to ensure the mode is changed
