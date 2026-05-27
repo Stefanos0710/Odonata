@@ -234,7 +234,7 @@ def yaw_drone(master, yaw_rate=90, duration=2):
     time.sleep(1) # wait a bit to ensure the mode is changed
 
 
-def land_drone(master, landing_speed=0.3):
+def land_drone(master, landing_speed=0.25):
     """
     Land the drone by using the distance to the ground from the downward facing sensor and the distance to the april tag from the camera, which is also facing downwards, to control the landing process.
 
