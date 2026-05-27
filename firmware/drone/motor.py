@@ -194,11 +194,12 @@ def move_drone(master, direction="front", speed=0.5, distance=1.0, stopping_dist
     time.sleep(1) # wait a bit to ensure the mode is changed
 
 
-def yaw_drone(master, yaw_rate=90):
+def yaw_drone(master, yaw_rate=90, duration=2):
     """
     Yaw the drone in a specific direction with a specific yaw rate for a specific time.
 
     :param yaw_rate: the yaw positive values for right and negative values for left in degrees
+    :param duration: the time for which to yaw the drone in seconds
     """
 
     # activate the no_gps mode, to be able to control the drone without gps
@@ -208,19 +209,24 @@ def yaw_drone(master, yaw_rate=90):
     # calculate the yaw rate in radians per second -> mavlink takes yaw rate in radians per second
     yaw_rate_rad_s = yaw_rate * (math.pi / 180)
 
-    # here comes the movment with mask to only control the yaw rate: 0b010111100111
-    master.mav.set_position_target_local_ned_send(
-        0, # time_boot_ms
-        master.target_system, master.target_component,
-        mavutil.mavlink.MAV_FRAME_LOCAL_NED,
-        0b010111100111, # type_mask (only yaw rate is enabled)
-        0, 0, 0, # x, y, z positions (not used)
-        0, 0, 0, # x, y, z velocity in m/s (not used)
-        0, 0, 0, # x, y, z acceleration (not used)
-        0, # yaw rate in radians per second, yaw in degrees (not used)
-        yaw_rate_rad_s
-    )
-        
+    start_time = time.time()
+
+    # here happens the real yawing logic, with a mask to only control the yaw rate: 0b010111100111
+    while time.time() - start_time < duration:
+        # here comes the movment with mask to only control the yaw rate: 0b010111100111
+        master.mav.set_position_target_local_ned_send(
+            0, # time_boot_ms
+            master.target_system, master.target_component,
+            mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+            0b010111100111, # type_mask (only yaw rate is enabled)
+            0, 0, 0, # x, y, z positions (not used)
+            0, 0, 0, # x, y, z velocity in m/s (not used)
+            0, 0, 0, # x, y, z acceleration (not used)
+            0, # yaw rate in radians per second, yaw in degrees (not used)
+            yaw_rate_rad_s
+        )
+        time.sleep(0.1) # for the next command after 100ms becasue we have to keep 10Hz control of the drone
+
     # now the drone has to hover in that position
     print("Entering hover mode")
     master.set_mode('ALT_HOLD')
