@@ -14,14 +14,14 @@ class Battery:
         # AIN2 is cell3 where the whole battery voltage is measured
         self.battery_voltage_channel = AnalogIn(self.ads, ADS.P2)
 
-        # voltage factor to get the real voltage, after it was decided by the R16 3.3k Ohm, osthat
+        # voltage factor to get the real voltage, after it was decided by the R16 3.3k Ohm and R17 10k Ohm voltage divider
         self.voltage_divider_ratio = 4.31
 
         # is the battery status thread running
         self.running = False
 
         # the current battery percentage
-        self.battery_percentage = float
+        self.battery_percentage = float(None)
 
     def start(self):
         self.running = True
@@ -45,3 +45,5 @@ class Battery:
             battery_percentage = max(0, min(100, battery_percentage))  # Ensure it's within 0-100%
 
             self.battery_percentage = battery_percentage
+
+            time.sleep(2)  # update every 2 seconds
