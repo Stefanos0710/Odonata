@@ -63,6 +63,12 @@ class Camera:
 
 
     def get_yaw(R):
+        """
+        calculates the yaw angle from the rotation matrix R, which is part of the pose estimation of
+        
+        :param R: the rotation matrix from the pose estimation of the april tag, which is a 3x3 numpy array
+        
+        """
         sy = np.sqrt(R[0,0] * R[0,0] + R[1,0] * R[1,0])
         singular = sy < 1e-6
         

@@ -17,6 +17,12 @@ def calibrate_servo():
     time.sleep(1)
 
 def move_servo(angle):
+    """
+    Move the servo to a specific angle within the safe range.
+    
+    :param angle: the desired angle to move the servo to, in degrees
+    """
+
     # confirm and potentially adjust the angle to be within the safe zone
     safe_angle = max(min_angle, min(max_angle, angle)) # ensure the angle is within the safe range
 

@@ -3,6 +3,10 @@ import tof_sensor
 import time
 
 def arm_drone(master):
+    """
+    Arm the drone by sending the appropriate command to the flight controller.
+    
+    """
     print("Arming motors...")
     master.mav.command_long_send(
         master.target_system, master.target_component,
@@ -12,7 +16,14 @@ def arm_drone(master):
     time.sleep(2) # Give motors time to spin up safely
 
 
-def motor(master, motor_number, throttle_value, time_seconds):
+def test_motor(master, motor_number, throttle_value, time_seconds):
+    """
+    Test a specific motor by sending a motor test command.
+
+    :param motor_number: the number of the motor to test (1-4)
+    :param throttle_value: the throttle value in percentage (0-100)
+    :param time_seconds: the duration of the test in seconds
+    """
     # activate the motors
     arm_drone(master)
 
@@ -31,11 +42,13 @@ def motor(master, motor_number, throttle_value, time_seconds):
     )
 
 
-def takeoff(master, 
-            target_altitude=1.0, # target altitude in meters
-            climbing_speed=0.3 # climbing speed in m/s
-            ):
-    """here we need sensor number 2 (one that is facing downwards) to measure the distance to the ground, and then we can use that distance to take off to a certain height"""
+def takeoff(master, target_altitude=1.0, climbing_speed=0.3):
+    """
+    here we need sensor number 2 (one that is facing downwards) to measure the distance to the ground, and then we can use that distance to take off to a certain height
+
+    :param target_altitude: the target altitude in meters
+    :param climbing_speed: the climbing speed in m/s
+    """
     # changing to GUIDED_NOGPS mode, to be able to control the drone without gps
     master.set_mode('GUIDED_NOGPS')
 
@@ -83,6 +96,9 @@ def takeoff(master,
     # wait a bit to ensure the mode is changed
     time.sleep(1)
 
-def yaw_drone():
-    pass
-    
+def move_drone(master, direction="front", speed=0.5, distance=1.0):
+    """
+    :param direction: the direction in which the drone should move, can be "front", "back", "left" or "right"
+    :param speed: the speed at which the drone should move in m/s
+    :param distance: the distance the drone should move in meters
+    """
