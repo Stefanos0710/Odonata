@@ -65,3 +65,50 @@ def get_telemetry():
                 "left": 0
             }
         }
+
+# -- API commands ---
+
+@app.post("/api/drone/start")
+def start_drone():
+    try:
+        response = requests.post(f"{pi_url}/drone/start", timeout=1)
+        return response.json()
+    except Exception as e:
+        print(f"Error occurred while starting the drone: {e}")
+        return {"status": "error", "message": "Failed to start the drone and to reach the raspberry pi"}
+    
+@app.post("/api/drone/stop")
+def stop_drone():
+    try:
+        response = requests.post(f"{pi_url}/drone/stop", timeout=1)
+        return response.json()
+    except Exception as e:
+        print(f"Error occurred while stopping the drone: {e}")
+        return {"status": "error", "message": "Failed to stop the drone and to reach the raspberry pi"}
+    
+@app.post("/api/flight/start")
+def start_flight():
+    try:
+        response = requests.post(f"{pi_url}/flight/start", timeout=1)
+        return response.json()
+    except Exception as e:
+        print(f"Error occurred while starting the flight: {e}")
+        return {"status": "error", "message": "Failed to start the flight and to reach the raspberry pi"}
+    
+@app.post("/api/servo/move")
+def move_servo(command: ServoCommand):
+    try:
+        response = requests.post(f"{pi_url}/servo/move", json={"angle": command.angle}, timeout=1)
+        return {"status": "success", "message": f"Servo moved to {command.angle} degrees"}
+    except Exception as e:
+        print(f"Error occurred while moving the servo: {e}")
+        return {"status": "error", "message": "Failed to move the servo and to reach the raspberry pi"}
+    
+@app.post("/api/motor/test")
+def test_motor(command: MotorTestCommand):
+    try:
+        response = requests.post(f"{pi_url}/motor/test", json=command.dict(), timeout=1)
+        return {"status": "success", "message": f"Motor {command.motor_number} tested with throttle {command.throttle} for {command.duration} seconds"}
+    except Exception as e:
+        print(f"Error occurred while testing the motor: {e}")
+        return {"status": "error", "message": "Failed to test the motor and to reach the raspberry pi"}
