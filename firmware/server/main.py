@@ -7,23 +7,21 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from pymavlink import mavutil
 
-app = FastAPI()
+import requests
 
+app = FastAPI(title="Drone Control Cockpit")
+
+
+# define the frontend
 if path.exists("frontend"):
     app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 templates = Jinja2Templates(directory="frontend")
 
-pi_ip = "11.22.33.44" # replace with the actual ip address of the pi
+
+# defining the API adresses of the drone
+pi_ip = ""
 pi_url = f"http://{pi_ip}:5000/api"
-
-master = None
-
-def get_laptop_drone_connection():
-    global master
-    if master is None:
-        master = mavutil.mavlink_connection("udpin:0.0.0.0:14550")
-    return master
 
 class ServoCommand(BaseModel):
     angle: int
@@ -37,15 +35,33 @@ class MotorTestCommand(BaseModel):
 def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
 
-@app.post("/api/get_data")
-def get_data():
-    # set battery status
-    battery_percentage = 0
-    battery_connection = False
+# -- API telemetry ---
+def get_telemetry():
+    try:
+        response = requests.get(f"{pi_url}/telemetry", timeout=1)
+        data = response.json()
 
-    drone = get_laptop_drone_connection()
-    msg = drone.recv_match(type='SYS_STATUS', blocking=False)
-    if msg is not None:
-        battery_percentage = msg.battery_remaining
-        battery_connection = True
+        # tof data
+        pi_tof = data.get("tof", [0, 0, 0, 0])
 
+        # 
+        return {
+            "battery": data.get("battery", 0),
+            "tof": {
+                "right": pi_tof[0] / 10, # convert from mm to cm
+                "front": pi_tof[1] / 10,
+                "bottom": pi_tof[2] / 10,
+                "left": pi_tof[3] / 10
+            }
+        }
+    except Exception as e:
+        print(f"Error occurred while fetching telemetry: {e}")
+        return {
+            "battery": 0,
+            "tof": {
+                "right": 0,
+                "front": 0,
+                "bottom": 0,
+                "left": 0
+            }
+        }
