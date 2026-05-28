@@ -195,6 +195,79 @@
     sendCommand("/api/flight/start");
   });
 
+  // Connect Drone Modal logic
+  const modal = $("#connect-modal");
+  const btnConnectDrone = $("#btn-connect-drone");
+  const btnCloseModal = $("#close-modal");
+  const ipList = $("#connected-ips-list");
+  const btnManualConnect = $("#btn-manual-connect");
+  const manualIpInput = $("#manual-ip");
+
+  async function loadConnectedIps() {
+    ipList.innerHTML = "<li>Loading IPs...</li>";
+    try {
+      const response = await fetch("/api/connected-ips");
+      const data = await response.json();
+      ipList.innerHTML = "";
+      if (data.ips.length === 0) {
+        ipList.innerHTML = "<li>No connected IPs found.</li>";
+      } else {
+        data.ips.forEach(device => {
+          const li = document.createElement("li");
+          
+          const infoSpan = document.createElement("span");
+          infoSpan.innerHTML = `<strong>${device.ip}</strong><br><small style="color:var(--text-muted);font-size:0.8em">${device.description}</small>`;
+          
+          const selectBtn = document.createElement("button");
+          selectBtn.className = "btn-sm btn-primary";
+          selectBtn.textContent = "Select";
+          selectBtn.onclick = () => setDroneIp(device.ip);
+          
+          li.appendChild(infoSpan);
+          li.appendChild(selectBtn);
+          ipList.appendChild(li);
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      ipList.innerHTML = "<li>Failed to load IPs.</li>";
+    }
+  }
+
+  async function setDroneIp(ip) {
+    console.log("Setting drone IP to", ip);
+    const result = await sendCommand("/api/set-drone-ip", { ip: ip });
+    if (result && result.status === "success") {
+      alert("Drone IP set successfully.");
+      modal.style.display = "none";
+    } else {
+      alert("Failed to set Drone IP.");
+    }
+  }
+
+  btnConnectDrone.addEventListener("click", () => {
+    modal.style.display = "flex";
+    loadConnectedIps();
+  });
+
+  btnCloseModal.addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+
+  btnManualConnect.addEventListener("click", () => {
+    const ip = manualIpInput.value.trim();
+    if (ip) {
+      setDroneIp(ip);
+    }
+  });
+
+  // Close modal when clicking outside
+  window.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.style.display = "none";
+    }
+  });
+
   // motor controls
   $$(".motor-toggle").forEach((btn) => {
     btn.addEventListener("click", () => {

@@ -11,6 +11,10 @@ import requests
 
 app = FastAPI(title="Drone Control Cockpit")
 
+import subprocess
+import socket
+import re
+import platform
 
 # define the frontend
 if path.exists("frontend"):
@@ -31,9 +35,46 @@ class MotorTestCommand(BaseModel):
     throttle: float
     duration: float
 
+class DroneIPCommand(BaseModel):
+    ip: str
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
+
+@app.get("/api/connected-ips")
+def get_connected_ips():
+    devices = []
+    try:
+        # Run arp -a to get neighbor cache
+        output = subprocess.check_output("arp -a", shell=True).decode(errors="ignore")
+        # Extract IP addresses using regex
+        ips = re.findall(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b", output)
+        
+        # Remove duplicates and multicast/broadcast addresses
+        unique_ips = list(set(ips))
+        for ip in unique_ips:
+            if ip.startswith("127.") or ip.startswith("224.") or ip.startswith("239.") or ip.endswith(".255"):
+                continue
+            
+            # try to get hostname as description
+            try:
+                hostname = socket.gethostbyaddr(ip)[0]
+            except socket.herror:
+                hostname = "Unknown Device"
+            
+            devices.append({"ip": ip, "description": hostname})
+    except Exception as e:
+        print(f"Error scanning network: {e}")
+        
+    return {"ips": devices}
+
+@app.post("/api/set-drone-ip")
+def set_drone_ip(command: DroneIPCommand):
+    global pi_ip, pi_url
+    pi_ip = command.ip
+    pi_url = f"http://{pi_ip}:5000/api"
+    return {"status": "success", "message": f"Drone IP set to {pi_ip}"}
 
 # -- API telemetry ---
 def get_telemetry():
