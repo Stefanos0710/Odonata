@@ -14,7 +14,7 @@ app = FastAPI(title="Drone Control Cockpit")
 
 # define the frontend
 if path.exists("frontend"):
-    app.mount("/static", StaticFiles(directory="frontend"), name="static")
+    app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 
 templates = Jinja2Templates(directory="frontend")
 

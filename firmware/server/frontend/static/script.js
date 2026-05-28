@@ -153,6 +153,105 @@
     }
   }
 
+  // API ENDPOINTS //
+  async function sendCommand(url, payload = {}) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      return await response.json();
+    } catch (error) {
+      console.error(`API-Fehler bei ${url}:`, error);
+    }
+  }
+
+  // Is the drone connected?
+  function setConnected(connected) {
+    if (connected) {
+      statusPill.classList.add("connected");
+      statusPill.innerHTML = '<span class="status-dot"></span>Connected';
+    } else {
+      statusPill.classList.remove("connected");
+      statusPill.innerHTML = '<span class="status-dot"></span>Disconnected';
+    }
+  }
+
+
+  // the 3 main actions: start/stop drone, start flight
+  $("#btn-start-drone").addEventListener("click", () => {
+    console.log("Start Drone requested");
+    sendCommand("/api/drone/start");
+  });
+
+  $("#btn-stop-drone").addEventListener("click", () => {
+    console.log("Stop Drone requested");
+    sendCommand("/api/drone/stop");
+  });
+
+  $("#btn-start-flight").addEventListener("click", () => {
+    console.log("Start Flight requested");
+    sendCommand("/api/flight/start");
+  });
+
+  // motor controls
+  $$(".motor-toggle").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const motorNum = parseInt(btn.dataset.motor);
+      const throttleVal = parseFloat($(`#motor${motorNum}-throttle`).value);
+      
+      console.log(`Motor ${motorNum}: START at throttle ${throttleVal}`);
+      // Sendet die Daten passend zum Pydantic-Modell des Servers
+      sendCommand("/api/motor/test", {
+        motor_number: motorNum,
+        throttle: throttleVal,
+        duration: 2.0
+      });
+    });
+  });
+
+  $$(".motor-stop").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const motorNum = parseInt(btn.dataset.motor);
+      console.log(`Motor ${motorNum}: STOP`);
+      
+      // Setzt den Motor sofort für eine minimale Dauer auf 0.0 Throttle
+      sendCommand("/api/motor/test", {
+        motor_number: motorNum,
+        throttle: 0.0,
+        duration: 0.1
+      });
+    });
+  });
+
+  // battery status update
+  function updateBattery(pct) {
+    pct = Math.max(0, Math.min(100, pct));
+    batteryPct.textContent = pct;
+    batteryFill.style.width = pct + "%";
+
+    batteryFill.classList.remove("low", "mid");
+    if (pct <= 20) {
+      batteryFill.classList.add("low");
+    } else if (pct <= 50) {
+      batteryFill.classList.add("mid");
+    }
+  }
+
+  // update the battery status 
+  updateBattery(0);
+
+  // servo slider 
+  servoSlider.addEventListener("input", () => {
+    const currentAngle = parseInt(servoSlider.value);
+    servoValue.textContent = currentAngle;
+    
+    // send the current angle to the server
+    sendCommand("/api/servo/move", { angle: currentAngle });
+  });
+
+
   // Simulate connection after 1 second (remove when real API is wired)
   // setTimeout(() => setConnected(true), 1000);
 
