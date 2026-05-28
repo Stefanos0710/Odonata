@@ -136,6 +136,21 @@ def start_flight():
         print(f"Error occurred while starting the flight: {e}")
         return {"status": "error", "message": "Failed to start the flight and to reach the raspberry pi"}
     
+class WebRTCOffer(BaseModel):
+    sdp: str
+    type: str
+
+@app.post("/api/webrtc/offer")
+def webrtc_offer(offer: WebRTCOffer):
+    try:
+        response = requests.post(f"http://{pi_ip}:5000/api/webrtc/offer", json={"sdp": offer.sdp, "type": offer.type}, timeout=3)
+        if response.status_code == 200:
+            return response.json()
+        return {"error": f"Failed with status {response.status_code}"}
+    except Exception as e:
+        print(f"Error occurred while starting webrtc: {e}")
+        return {"error": "Failed to connect to the drone for WebRTC"}
+
 @app.post("/api/servo/move")
 def move_servo(command: ServoCommand):
     try:

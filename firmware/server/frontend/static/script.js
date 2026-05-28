@@ -11,6 +11,7 @@
 
   const videoToggle  = $("#video-toggle");
   const videoCanvas  = $("#video-canvas");
+  const videoStream  = $("#video-stream");
   const videoOverlay = $("#video-overlay");
   const servoSlider  = $("#servo-slider");
   const servoValue   = $("#servo-value");
@@ -21,12 +22,15 @@
   let videoStreamActive = false;
   let videoAnimFrame     = null;
   const ctx = videoCanvas.getContext("2d");
+  let peerConnection = null;
 
   /**
    * Draw a static noise pattern on the canvas as a placeholder
    * when the real camera stream is unavailable.
    */
   function drawNoise() {
+    videoStream.style.display = "none";
+    videoCanvas.style.display = "block";
     const w = videoCanvas.width;
     const h = videoCanvas.height;
     const imageData = ctx.createImageData(w, h);
@@ -64,18 +68,66 @@
     ctx.clearRect(0, 0, videoCanvas.width, videoCanvas.height);
   }
 
+  async function startWebRTC() {
+    peerConnection = new RTCPeerConnection();
+    
+    // Play the stream when it arrives
+    peerConnection.addEventListener("track", (evt) => {
+      stopVideoLoop(); // Stop noise
+      videoCanvas.style.display = "none";
+      videoStream.style.display = "block";
+      if (videoStream.srcObject !== evt.streams[0]) {
+        videoStream.srcObject = evt.streams[0];
+      }
+    });
+
+    peerConnection.addTransceiver('video', { direction: 'recvonly' });
+
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+
+    try {
+      const response = await fetch("/api/webrtc/offer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sdp: peerConnection.localDescription.sdp,
+          type: peerConnection.localDescription.type
+        })
+      });
+      const answer = await response.json();
+      if (answer.sdp) {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+      } else {
+        console.error("WebRTC Error:", answer);
+        startVideoLoop();
+      }
+    } catch (e) {
+      console.error("Failed to start WebRTC:", e);
+      startVideoLoop();
+    }
+  }
+
+  function stopWebRTC() {
+    if (peerConnection) {
+      peerConnection.close();
+      peerConnection = null;
+    }
+    videoStream.srcObject = null;
+    videoStream.style.display = "none";
+    videoCanvas.style.display = "block";
+  }
+
   videoToggle.addEventListener("change", () => {
     videoStreamActive = videoToggle.checked;
 
     if (videoStreamActive) {
       videoOverlay.classList.add("hidden");
       startVideoLoop();
-      // TODO: connect to actual MJPEG / WebSocket stream from drone
-      // Example: const img = new Image();
-      //          img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      //          img.src = "/stream?t=" + Date.now();
+      startWebRTC();
     } else {
       videoOverlay.classList.remove("hidden");
+      stopWebRTC();
       stopVideoLoop();
     }
   });

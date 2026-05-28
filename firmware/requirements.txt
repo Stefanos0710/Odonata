@@ -10,6 +10,8 @@ Adafruit-PlatformDetect==3.88.0
 Adafruit-PureIO==1.1.11
 Adafruit_ADS1x15==1.0.2
 Adafruit_GPIO==1.0.3
+aiortc==1.8.0
+av==11.0.0
 binho-host-adapter==0.1.6
 board==1.0
 colorzero==2.0

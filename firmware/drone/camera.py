@@ -25,6 +25,39 @@ from pupil_apriltags import Detector
 import numpy as np
 import threading
 import time
+import asyncio
+try:
+    from aiortc import VideoStreamTrack
+    from av import VideoFrame
+except ImportError:
+    VideoStreamTrack = object  # Mock if aiortc is not installed
+
+class CameraTrack(VideoStreamTrack):
+    """
+    A video stream track that returns frames from the camera.
+    """
+    def __init__(self, camera_instance):
+        super().__init__()
+        self.camera = camera_instance
+
+    async def recv(self):
+        pts, time_base = await self.next_timestamp()
+        
+        # Get latest frame from camera
+        frame = self.camera.current_frame
+        if frame is None:
+            # If no frame yet, generate a blank frame
+            frame = np.zeros((480, 640, 3), dtype=np.uint8)
+
+        # Convert OpenCV BGR frame to RGB for av
+        frame_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+        
+        # Create VideoFrame
+        video_frame = VideoFrame.from_ndarray(frame_rgb, format="rgb24")
+        video_frame.pts = pts
+        video_frame.time_base = time_base
+        
+        return video_frame
 
 class Camera:
     def __init__(self):
@@ -36,6 +69,9 @@ class Camera:
 
         # the current data from the camera
         self.current_data = []
+        
+        # the current frame for webrtc
+        self.current_frame = None
 
     def setup(self):
         # defining the arguments of the parser
@@ -107,6 +143,8 @@ class Camera:
             if not ret:
                 print("Failed to grab frame")
                 break
+                
+            self.current_frame = frame
 
             image = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
             tags = self.at_detector.detect(

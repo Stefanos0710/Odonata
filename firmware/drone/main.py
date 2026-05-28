@@ -17,8 +17,27 @@ import time
 # server imports
 import fastapi
 import uvicorn
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+import json
+import uuid
+
+try:
+    from aiortc import RTCPeerConnection, RTCSessionDescription
+    from firmware.drone.camera import CameraTrack
+except ImportError:
+    RTCPeerConnection = None
+    RTCSessionDescription = None
+    CameraTrack = None
+
+# RTCPeerConnection handling
+pcs = set()
+
+# Initialize camera
+cam = camera.Camera()
+cam.setup()
+cam.start()
 
 # -- Functions to interact with the drone ---
 
@@ -169,6 +188,46 @@ def api_test_motor(command: MotorTestCommand):
     except Exception as e:
         print(f"Error occurred while testing the motor: {e}")
         return {"status": "Failed to test motor"}
+
+class WebRTCOffer(BaseModel):
+    sdp: str
+    type: str
+
+@app.post("/api/webrtc/offer")
+async def webrtc_offer(offer: WebRTCOffer):
+    if RTCPeerConnection is None:
+        return JSONResponse(content={"error": "aiortc is not installed"}, status_code=500)
     
+    pc = RTCPeerConnection()
+    pcs.add(pc)
+
+    @pc.on("connectionstatechange")
+    async def on_connectionstatechange():
+        print(f"Connection state is {pc.connectionState}")
+        if pc.connectionState == "failed" or pc.connectionState == "closed":
+            await pc.close()
+            pcs.discard(pc)
+
+    # Add the camera video track
+    video_track = CameraTrack(cam)
+    pc.addTrack(video_track)
+
+    desc = RTCSessionDescription(sdp=offer.sdp, type=offer.type)
+    await pc.setRemoteDescription(desc)
+    answer = await pc.createAnswer()
+    await pc.setLocalDescription(answer)
+
+    return JSONResponse(
+        content={"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}
+    )
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    # close all peer connections
+    coros = [pc.close() for pc in pcs]
+    import asyncio
+    await asyncio.gather(*coros)
+    cam.stop()
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=5000)
