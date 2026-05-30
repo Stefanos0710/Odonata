@@ -1,10 +1,10 @@
 # Odonata
 
-Odonata is an autonomous indoor drone that is controlled over the internet (local network). It has 4 ToF sensors to find out its position in the room and can make controlled landings on the landing station with the AprilTags that the camera can detect. The landing station has self-centering sticks, so that the drone can have an error of about 1cm and it still lands safely. It uses a 3S 11.1V 850mAh battery so that it can get roughly a flight time of 5min and it weighs about 300g, and with its ~1100g thrust it has about a 1:3 thrust-to-weight ratio which is pretty nice.
+Odonata is an autonomous indoor drone controlled over a local network. I had the idea for the project, after I once bought a drone that broke after just two days because I struggled to control it manually. Sothat it doesn´t crash again, I decided to build a new,  autonomous drone and named it Odonata, after the Latin word for dragonfly.
 
-I had the idea after I once bought a drone and after only 2 days it broke because I wasn't good at controlling the drone with a controller. And to get a new drone and make it autonomous (so that I cannot crash it again) I started this project: Odonata (btw, the name comes from the Latin word for dragonfly).
+The drone weighs about 300g and uses a 3S 11.1V 850mAh battery, giving it a flight time of roughly 5 minutes. With around 1100g of thrust, it achieves a 3:1 thrust-to-weight ratio, which allows precise flights. For navigation, it has 4 ToF (Time-of-Flight) sensors to track its position in the room, and it can perform controlled autonomous landings using a camera that detects AprilTags on the landing station. The landing station is designed with self-centering sticks, sothat even with a positioning error of about 1cm, the drone can still lands safely.
 
-Odonata works with a Raspberry Pi Zero 2W and a flight controller from DarwinFPV. With a custom PCB I can connect the Pi with the FC and send and receive data via MAVLink commands, like start the motors, pitch, etc. The project is separated into 2 parts: the drone itself and the server. The server hosts the website/cockpit where you can control and monitor the drone and send commands like testing the motors, starting the drone or starting a flight. It works locally, so you can for example just run the server on your laptop or PC or host it on another Raspberry Pi.
+Odonata runs on a Raspberry Pi Zero 2W and a DarwinFPV flight controller, connected together via a custom PCB. With this setup the Pi can send and receive data using MAVLink commands (such as starting the motors, pitching, etc.). The project is split into two parts: the drone itself and a local server. The server hosts a web-based cockpit where you can monitor the drone, test the motors, and start-stop flights. Because it works locally, you can easily host the server on your laptop, PC, or a separate Raspberry Pi.
 
 ## Zine Poster
 
@@ -19,9 +19,9 @@ Here you can see the user interface of the cockpit where you can monitor the dro
 
 ## CAD Model
 
-The CAD design of Odonata is split into several parts, like the arms, the walls, the base, the cover, and the propguards. Everything is attached to each other with M2 screws and heat inserts or slide-ins and clickers. The .step, .stl and f3d/f3z data can be found at the /CAD directory. Here are some nice renders of the assembled drone:
+The CAD design of Odonata is split into several parts, like the arms, the walls, the base, the cover, and the propguards. Everything is attached using M2 screws and heat inserts, or slide-ins and snap-fits. The .step, .stl and f3d/f3z files can be found at the /CAD directory. Here are some nice renders of the assembled drone:
 
-*(All parts were modeled and rendered in Autodesk Fusion 360)*
+(All parts were modeled and rendered in Autodesk Fusion 360)
 
 ![Landing Station Assembly](images/rendered_assembly.png)
 
@@ -37,7 +37,7 @@ The CAD design of Odonata is split into several parts, like the arms, the walls,
 
 ## PCB
 
-This custom PCB is designed in KiCad and makes the flawless communication between the Flight Controller and the Raspberry Pi Zero 2W, and also connects the servo, the ToF sensors, and camera to a working system. It uses 4 layers for optimal connection and for no noise on the powerlines, etc.
+This custom PCB is designed in KiCad and makes the flawless communication between the Flight Controller and the Raspberry Pi Zero 2W possible, and also connects the servo, the ToF sensors and camera to a working system. It uses a 4-layer design for the optimal routing and to ensure no noise on the power lines.
 
 ### Schematics
 
@@ -177,4 +177,4 @@ Here is a list of components and parts I used for this project:
 | Heat insert | 50pcs M2 2mm | [Aliexpress](https://de.aliexpress.com/item/1005008318533389.html) | 2,66 | 1,00 | 2,66 | 0 | |
 | **Sum Costs** |  |  |  |  | **222,71** | **40,22** | **262,93** |
 
-Thanks to Fallout from hackclub to inspire me to build this project and finance it!
+Huge thanks to Fallout from Hack Club for inspiring me to build this project and for financing it!
