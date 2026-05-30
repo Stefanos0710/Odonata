@@ -69,6 +69,10 @@ The PCB uses 4 layers: 1. TOP-Signal layer 2. GND layer 3. Power layer 4. Signal
 |----------|-------------|
 | ![Front](images/redner_pcb_front.png) | ![Back](images/render_pcb_back.png) |
 
+#### JLCPCB Order
+
+![JLCPCB](images/jlcpcb.png)
+
 
 ## Download the Firmware
 
