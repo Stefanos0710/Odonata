@@ -6,6 +6,12 @@ The drone weighs about 300g and uses a 3S 11.1V 850mAh battery, giving it a flig
 
 Odonata runs on a Raspberry Pi Zero 2W and a DarwinFPV flight controller, connected together via a custom PCB. With this setup the Pi can send and receive data using MAVLink commands (such as starting the motors, pitching, etc.). The project is split into two parts: the drone itself and a local server. The server hosts a web-based cockpit where you can monitor the drone, test the motors, and start-stop flights. Because it works locally, you can easily host the server on your laptop, PC, or a separate Raspberry Pi.
 
+## First Flight
+
+The first version of Odonata in flight (click to watch on YouTube):
+
+[![Odonata first flight](https://img.youtube.com/vi/tDMgUdCkJ7U/maxresdefault.jpg)](https://www.youtube.com/shorts/tDMgUdCkJ7U)
+
 ## Zine Poster
 
 Here is the Zine poster of my project Odonata:
