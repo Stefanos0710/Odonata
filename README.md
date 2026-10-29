@@ -8,9 +8,11 @@ Odonata runs on a Raspberry Pi Zero 2W and a DarwinFPV flight controller, connec
 
 ## First Flight
 
-The first version of Odonata in flight (click to watch on YouTube):
+The first version of Odonata in flight:
 
-[![Odonata first flight](https://img.youtube.com/vi/tDMgUdCkJ7U/maxresdefault.jpg)](https://www.youtube.com/shorts/tDMgUdCkJ7U)
+![Odonata first flight](images/first_flight.gif)
+
+[Watch in full quality on YouTube](https://www.youtube.com/shorts/tDMgUdCkJ7U)
 
 ## Zine Poster
 
